@@ -1,0 +1,111 @@
+-- Create a ScreenGui to hold our GUI elements
+local gui = Instance.new("ScreenGui")
+gui.Parent = game.Players.LocalPlayer.PlayerGui
+
+-- Create a Frame to hold our aimbot controls
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 200, 0, 100) -- Set size of the frame
+frame.Position = UDim2.new(0, 10, 0, 10) -- Set position of the frame
+frame.BackgroundColor3 = Color3.new(0, 0, 0) -- Black background
+frame.BackgroundTransparency = 0.5 -- Semi-transparent
+frame.Parent = gui
+
+-- Variable to track drag behavior
+local isDragging = false
+local dragStartOffset = nil
+
+-- Function to handle touch input for dragging
+local function handleTouchMoved(input)
+    if isDragging and dragStartOffset then
+        local newPosition = UDim2.new(0, input.Position.X - dragStartOffset.X, 0, input.Position.Y - dragStartOffset.Y)
+        frame.Position = newPosition
+    end
+end
+
+-- Function to start dragging
+frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        isDragging = true
+        dragStartOffset = Vector2.new(input.Position.X - frame.AbsolutePosition.X, input.Position.Y - frame.AbsolutePosition.Y)
+    end
+end)
+
+-- Function to stop dragging
+frame.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        isDragging = false
+        dragStartOffset = nil
+    end
+end)
+
+-- Create a TextLabel for instructions
+local label = Instance.new("TextLabel")
+label.Size = UDim2.new(1, 0, 0.5, 0) -- 50% of parent width, full height
+label.Position = UDim2.new(0, 0, 0, 0) -- Top-left corner
+label.BackgroundColor3 = Color3.new(1, 1, 1) -- White background
+label.TextColor3 = Color3.new(0, 0, 0) -- Black text
+label.Text = "Aimbot: OFF" -- Initial display text
+label.Parent = frame
+
+-- Create a TextButton to toggle aimbot
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(1, 0, 0.5, 0) -- 50% of parent width, full height
+toggleButton.Position = UDim2.new(0, 0, 0.5, 0) -- Bottom-left corner
+toggleButton.BackgroundColor3 = Color3.new(0.2, 0.6, 1) -- Blue background
+toggleButton.TextColor3 = Color3.new(1, 1, 1) -- White text
+toggleButton.Text = "Toggle Aimbot" -- Button text
+toggleButton.Parent = frame
+
+-- Function to toggle aimbot on/off
+local aimbotEnabled = false
+toggleButton.MouseButton1Click:Connect(function()
+    aimbotEnabled = not aimbotEnabled
+    if aimbotEnabled then
+        label.Text = "Aimbot: ON"
+    else
+        label.Text = "Aimbot: OFF"
+    end
+end)
+
+-- Function to find player's head position
+local function findHeadPosition(player)
+    if player.Character and player.Character:FindFirstChild("Head") then
+        return player.Character.Head.Position
+    end
+    return nil
+end
+
+-- Function to aim at a given position
+local function aimAtPosition(position)
+    local currentCamera = game.Workspace.CurrentCamera
+    if currentCamera then
+        currentCamera.CFrame = CFrame.new(currentCamera.CFrame.Position, position)
+    end
+end
+
+-- Main loop to continuously aim at nearest player's head when aimbot is enabled
+while true do
+    wait(0.1) -- Adjust the delay as needed for performance
+
+    if aimbotEnabled then
+        local closestPlayer = nil
+        local shortestDistance = math.huge
+
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") then
+                local distance = (player.Character.Head.Position - game.Players.LocalPlayer.Character.Head.Position).magnitude
+                if distance < shortestDistance then
+                    closestPlayer = player
+                    shortestDistance = distance
+                end
+            end
+        end
+
+        if closestPlayer then
+            local headPosition = findHeadPosition(closestPlayer)
+            if headPosition then
+                aimAtPosition(headPosition)
+            end
+        end
+    end
+end
